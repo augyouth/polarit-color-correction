@@ -1,0 +1,12 @@
+{
+  "dependencies": {
+    "sharp": "^0.35.3"
+  },
+  "name": "film-color-calibration",
+  "version": "1.0.0",
+  "description": "인스탁스/폴라로이드 인화 색감 측정 기반 보정 (LUT 생성 + 적용)",
+  "scripts": {
+    "test": "node test/roundtrip.js mini mini_v square wide wide_v polaroid && node test/lutcheck.js && node test/finetune.test.js && node test/bordercrop.test.js",
+    "demo": "node test/demo.js"
+  }
+}

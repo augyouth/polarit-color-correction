@@ -1,0 +1,941 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f4f3f1">
+<title>폴라릿 색감 보정</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='5' y='2' width='22' height='28' rx='3' fill='%23fbfaf7' stroke='%23b5502f' stroke-width='2'/%3E%3Crect x='8' y='5' width='16' height='16' rx='1' fill='%232a2622'/%3E%3C/svg%3E">
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #f4f3f1;
+    --panel: #ffffff;
+    --border: #e2ded9;
+    --text: #2a2622;
+    --muted: #8a8378;
+    --accent: #b5502f;
+    --accent-soft: #f1e3dc;
+    --ok: #2f7d4f;
+    --stage: #1c1a18;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--text); }
+  body {
+    font-family: -apple-system, "Malgun Gothic", "Apple SD Gothic Neo", "Segoe UI", sans-serif;
+    line-height: 1.5;
+    padding: max(16px, env(safe-area-inset-top)) 16px max(24px, env(safe-area-inset-bottom));
+  }
+  main { max-width: 1240px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+  .narrow { max-width: 760px; width: 100%; align-self: center; }
+
+  header { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .brand svg { width: 26px; height: 26px; flex: none; }
+  h1 { font-size: 20px; margin: 0; letter-spacing: -0.01em; }
+  #presetWrap { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 8px; }
+  .chips { display: flex; gap: 6px; }
+  .chip {
+    font: inherit; font-size: 13px; padding: 6px 12px; border-radius: 999px; cursor: pointer;
+    border: 1px solid var(--border); background: var(--panel); color: var(--text);
+  }
+  .chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+  /* 첫 화면: 3단계 안내 + 사진 고르기 */
+  #pick { display: flex; flex-direction: column; gap: 14px; }
+  #pick[hidden] { display: none; }
+  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .step { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; display: flex; gap: 10px; align-items: flex-start; }
+  .step .n {
+    flex: none; width: 24px; height: 24px; border-radius: 50%; background: var(--accent); color: #fff;
+    font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center;
+  }
+  .step b { display: block; font-size: 14px; }
+  .step span { font-size: 12.5px; color: var(--muted); line-height: 1.45; }
+  .pickcard {
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+    min-height: 220px; border: 2px dashed var(--border); border-radius: 16px; background: var(--panel);
+    cursor: pointer; text-align: center; padding: 24px; transition: border-color .15s, background .15s;
+  }
+  .pickcard:active, .pickcard.drag { border-color: var(--accent); background: var(--accent-soft); }
+  .pickcard input { display: none; }
+  .pickcard .big { font-size: 17px; font-weight: 600; }
+  .pickcard .big b { color: var(--accent); }
+  .pickcard .small { font-size: 13px; color: var(--muted); }
+
+  /* 여러 장: 썸네일 줄 */
+  .strip { display: flex; align-items: center; gap: 8px; overflow-x: auto; padding: 6px 2px; }
+  .strip .thumb {
+    flex: none; height: 76px; border-radius: 8px; overflow: hidden; border: 2px solid transparent; background: var(--stage);
+    cursor: pointer; padding: 0; position: relative;
+  }
+  .strip .thumb canvas { display: block; height: 100%; width: auto; }
+  .strip .thumb[aria-current="true"] { border-color: var(--accent); }
+  .strip .thumb .no {
+    position: absolute; left: 4px; top: 4px; font-size: 11px; color: #fff; background: rgba(0,0,0,.55);
+    padding: 1px 6px; border-radius: 999px;
+  }
+  .strip .add {
+    flex: none; height: 76px; min-width: 76px; border-radius: 8px; border: 2px dashed var(--border); background: var(--panel);
+    color: var(--muted); font: inherit; font-size: 13px; cursor: pointer;
+  }
+  .stripinfo { font-size: 12px; color: var(--muted); margin: 0; }
+  .linkbtn { font: inherit; font-size: 12px; color: var(--accent); background: none; border: none; cursor: pointer; padding: 0; }
+
+  /* 작업 화면: 가운데 인화 예상 크게, 양옆 원본·보정본 작게 */
+  #work { display: flex; flex-direction: column; gap: 14px; }
+  #work[hidden] { display: none; }
+  .panes {
+    display: grid; gap: 12px; position: relative;
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas: "hero hero" "orig corr";
+  }
+  .pane { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+  .pane.orig { grid-area: orig; }
+  .pane.hero { grid-area: hero; }
+  .pane.corr { grid-area: corr; }
+  .pane .label { font-size: 14px; font-weight: 700; display: flex; align-items: baseline; gap: 8px; }
+  .pane .label small { font-size: 12px; font-weight: 500; color: var(--muted); }
+  .pane .stage {
+    position: relative; background: var(--stage); border-radius: 14px; overflow: hidden;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .pane.hero .stage { height: min(68vh, 720px); touch-action: none; user-select: none; -webkit-user-select: none; cursor: ew-resize; }
+  .pane.orig .stage, .pane.corr .stage { height: min(32vh, 320px); }
+  .pane canvas { display: block; width: 100%; height: 100%; object-fit: contain; }
+  .pane .cap { margin: 0; font-size: 12px; color: var(--muted); line-height: 1.45; }
+  .panes.busy::after { content: ""; position: absolute; inset: 0; background: rgba(244,243,241,.5); }
+
+  /* 원본 ↔ 인화 예상 비교 손잡이 */
+  #cvHeroOrig { position: absolute; inset: 0; }
+  .handle {
+    position: absolute; top: 0; bottom: 0; width: 2px; background: #fff; transform: translateX(-1px);
+    box-shadow: 0 0 0 1px rgba(0,0,0,.25); pointer-events: none;
+  }
+  .handle::after {
+    content: "‹ ›"; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    width: 34px; height: 34px; border-radius: 50%; background: #fff; color: var(--text);
+    display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 700; letter-spacing: -1px;
+    box-shadow: 0 1px 6px rgba(0,0,0,.35);
+  }
+  .tagchip {
+    position: absolute; top: 10px; font-size: 12px; color: #fff; background: rgba(0,0,0,.55);
+    padding: 4px 9px; border-radius: 999px; pointer-events: none;
+  }
+  .tagchip.l { left: 10px; } .tagchip.r { right: 10px; }
+
+  /* 조정 */
+  .tune { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; }
+  .tune .head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+  .tune .head b { font-size: 14px; }
+  .tune .head span { font-size: 12px; color: var(--muted); }
+  .nudges { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .nudge {
+    min-height: 44px; border-radius: 10px; border: 1px solid var(--border); background: var(--panel); color: var(--text);
+    font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.2;
+  }
+  .nudge small { font-size: 11px; color: var(--muted); font-weight: 500; }
+  .nudge:active { background: var(--accent-soft); }
+  .nudge:disabled { opacity: .4; cursor: default; }
+  .tunefoot { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 13px; }
+  .tunefoot #tuneSummary { color: var(--accent); font-weight: 600; }
+  .tunefoot button { font: inherit; font-size: 13px; color: var(--muted); background: none; border: none; cursor: pointer; padding: 6px 0 6px 10px; white-space: nowrap; }
+  details.more summary { list-style: none; cursor: pointer; font-size: 13px; color: var(--muted); }
+  details.more summary::-webkit-details-marker { display: none; }
+  details.more .body { display: flex; flex-direction: column; gap: 12px; padding-top: 12px; }
+  .row .rowhead { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 4px; }
+  .row .rowhead .val { color: var(--accent); font-variant-numeric: tabular-nums; }
+  input[type=range] { width: 100%; accent-color: var(--accent); margin: 0; }
+
+  .actions { display: flex; flex-direction: column; gap: 8px; }
+  .btn {
+    min-height: 50px; border-radius: 12px; font: inherit; font-size: 16px; font-weight: 700; cursor: pointer;
+    border: 1px solid var(--border); background: var(--panel); color: var(--text);
+  }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn:disabled { opacity: .55; cursor: default; }
+  .btn:focus-visible, .chip:focus-visible, .nudge:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .btn.ghost { border-color: transparent; background: transparent; color: var(--muted); font-weight: 600; min-height: 40px; font-size: 14px; }
+
+  #status { margin: 0; font-size: 13px; color: var(--muted); min-height: 20px; }
+  #status.ok { color: var(--ok); }
+  #status.err { color: var(--accent); }
+  .foot { font-size: 12px; color: var(--muted); background: var(--accent-soft); border-radius: 10px; padding: 10px 12px; line-height: 1.55; }
+
+  @media (max-width: 520px) {
+    .steps { grid-template-columns: 1fr; }
+    .nudges { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (min-width: 900px) {
+    body { padding-top: 28px; }
+    .panes { grid-template-columns: 1fr 2fr 1fr; grid-template-areas: "orig hero corr"; align-items: center; }
+    .pane.orig .stage, .pane.corr .stage { height: min(40vh, 380px); }
+    .actions { flex-direction: row; }
+    .actions .btn { flex: 1; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div class="brand">
+      <svg viewBox="0 0 32 32" aria-hidden="true"><rect x="5" y="2" width="22" height="28" rx="3" fill="#fbfaf7" stroke="#b5502f" stroke-width="2"/><rect x="8" y="5" width="16" height="16" rx="1" fill="#2a2622"/></svg>
+      <h1>폴라릿 색감 보정</h1>
+    </div>
+    <div id="presetWrap">
+      <span id="presetLabel">불러오는 중…</span>
+      <div class="chips" id="presetChips" hidden role="group" aria-label="필름 종류"></div>
+    </div>
+  </header>
+
+  <section id="pick" class="narrow">
+    <div class="steps" aria-label="사용 순서">
+      <div class="step"><div class="n">1</div><div><b>폴더 넣기</b><span>원본 사진 폴더를 통째로 끌어다 놓으세요. 안의 사진이 전부 열리고, 저장 위치도 자동으로 정해져요</span></div></div>
+      <div class="step"><div class="n">2</div><div><b>인화 예상 확인</b><span>손잡이를 끌어 원본과 비교하고, 필요하면 밝기·색을 한 단계씩 조정</span></div></div>
+      <div class="step"><div class="n">3</div><div><b>저장 → 인화</b><span>"전부 저장"을 누르면 폴더 안 색감조정완료 에 보정본이 쌓여요. 그대로 관리자에 등록·인화</span></div></div>
+    </div>
+    <label class="pickcard" id="pickcard">
+      <input type="file" id="fileInput" accept="image/*" multiple>
+      <div class="big">원본 사진이 든 <b>폴더를 끌어다 놓으세요</b></div>
+      <div class="small">폴더 안 사진을 전부 불러오고, 보정본은 그 폴더 안 <b>색감조정완료</b> 폴더에 자동 저장돼요 · 사진 몇 장만 끌어다 놓거나 클릭해서 고를 수도 있어요 · 사진은 이 PC 안에서만 처리돼요</div>
+    </label>
+  </section>
+
+  <section id="work" hidden>
+    <div class="panes" id="panes">
+      <div class="pane orig">
+        <div class="label">원본</div>
+        <div class="stage"><canvas id="cvOriginal"></canvas></div>
+        <p class="cap">보정 전 사진 그대로</p>
+      </div>
+      <div class="pane hero">
+        <div class="label">인화 예상 <small>근사치 · 손잡이를 끌어 원본과 비교</small></div>
+        <div class="stage" id="heroStage">
+          <canvas id="cvPredicted"></canvas>
+          <canvas id="cvHeroOrig"></canvas>
+          <div class="handle" id="handle"></div>
+          <span class="tagchip l">원본</span>
+          <span class="tagchip r">인화 예상</span>
+        </div>
+        <p class="cap">보정본을 인화하면 대략 이렇게 나와요. 흰 테두리와 잘림은 인스탁스 기본 배치 기준이에요.</p>
+      </div>
+      <div class="pane corr">
+        <div class="label">보정본 <small>저장되는 파일</small></div>
+        <div class="stage"><canvas id="cvCorrected"></canvas></div>
+        <p class="cap">일부러 어둡고 진하게 보여요 — 정상입니다. 필름이 밝게 뽑는 만큼 미리 눌러둔 것</p>
+      </div>
+    </div>
+
+    <div class="narrow" id="stripWrap" hidden>
+      <div class="strip" id="strip"></div>
+      <p class="stripinfo" id="stripInfo"></p>
+    </div>
+
+    <div class="tune narrow">
+      <div class="head"><b>조정</b><span>실물을 보고 한 단계씩만. 0이 측정으로 확정된 설정이고, 여러 장이면 전체에 같이 적용돼요.</span></div>
+      <div class="nudges">
+        <button type="button" class="nudge" data-nudge="ev" data-dir="-1">어둡게<small>밝기 −1단계</small></button>
+        <button type="button" class="nudge" data-nudge="ev" data-dir="1">밝게<small>밝기 +1단계</small></button>
+        <button type="button" class="nudge" data-nudge="warm" data-dir="-1">차갑게<small>푸른 쪽으로</small></button>
+        <button type="button" class="nudge" data-nudge="warm" data-dir="1">따뜻하게<small>노란 쪽으로</small></button>
+      </div>
+      <div class="tunefoot">
+        <span id="tuneSummary">조정 없음</span>
+        <button type="button" id="resetBtn">초기화</button>
+      </div>
+      <details class="more" id="more">
+        <summary>자세히 조정 (슬라이더 · 틴트 · 비네팅) ⌄</summary>
+        <div class="body">
+          <div class="row">
+            <div class="rowhead"><span>밝기</span><span class="val" id="valEv">0</span></div>
+            <input type="range" id="ev" min="-100" max="100" value="0" step="1" aria-label="밝기">
+          </div>
+          <div class="row">
+            <div class="rowhead"><span>색온도 (차갑게 ↔ 따뜻하게)</span><span class="val" id="valWarm">0</span></div>
+            <input type="range" id="warm" min="-100" max="100" value="0" step="1" aria-label="색온도">
+          </div>
+          <div class="row">
+            <div class="rowhead"><span>틴트 (그린 ↔ 마젠타)</span><span class="val" id="valTint">0</span></div>
+            <input type="range" id="tint" min="-100" max="100" value="0" step="1" aria-label="틴트">
+          </div>
+          <div class="row">
+            <div class="rowhead"><span>비네팅 (가장자리 어둡게)</span><span class="val" id="valVig">0</span></div>
+            <input type="range" id="vig" min="0" max="100" value="0" step="1" aria-label="비네팅">
+          </div>
+        </div>
+      </details>
+    </div>
+
+    <div class="actions narrow">
+      <button type="button" class="btn primary" id="shareBtn" hidden>보정본 공유 (인스탁스 앱 · 사진 저장)</button>
+      <button type="button" class="btn" id="downloadAllBtn" hidden>전부 저장</button>
+      <button type="button" class="btn" id="downloadBtn">보정본 파일로 저장</button>
+    </div>
+    <p class="stripinfo narrow" id="folderLine" hidden>저장 위치: <b id="folderName"></b></p>
+
+    <button type="button" class="btn ghost narrow" id="anotherBtn">다른 사진 고르기</button>
+  </section>
+
+  <p id="status" class="narrow" role="status" aria-live="polite"></p>
+
+  <p class="foot narrow">
+    "인화 예상"은 화면으로 보는 근사치예요. 화면(빛)과 필름(인쇄)은 완전히 같아질 수 없으니, 최종 판단은 실물로 해주세요.
+    실물 색이 계속 한쪽으로 틀어지면 재측정이 필요한 신호예요 — 담당자에게 알려주세요.
+    <span id="buildTag" style="display:block;margin-top:6px;opacity:.7">버전 2026-11-16 b · 화면이 설명과 다르면 Ctrl+F5</span>
+  </p>
+</main>
+
+<script>
+(() => {
+  'use strict';
+
+  const PREVIEW_MAX = 800;   // 화면 미리보기 긴 변
+  const EXPORT_MAX = 1600;   // 저장 파일 긴 변 (인스탁스 인화 해상도의 2배 이상)
+  const LIMIT = { ev: 1.0, warm: 0.15, tint: 0.15 }; // 미세조정 허용 폭 (측정 도구와 동일)
+  const STEP = { ev: 0.1, warm: 0.012, tint: 0.012 }; // 버튼 한 번당 폭 (측정 도구와 동일)
+  const DEBOUNCE_MS = 90;
+
+  const $ = (id) => document.getElementById(id);
+  const panes = $('panes');
+  const heroStage = $('heroStage');
+  const CV = { original: $('cvOriginal'), predicted: $('cvPredicted'), heroOrig: $('cvHeroOrig'), corrected: $('cvCorrected') };
+
+  const state = {
+    presets: [], preset: null,
+    corr: null, sim: null, trimmedCorr: null,
+    trim: { ev: 0, warm: 0, tint: 0 },
+    vignette: 0,
+    split: 0.35,
+    items: [],   // { name, srcFull(canvas), srcPreview(ImageData) }
+    active: -1,
+  };
+  const current = () => state.items[state.active] || null;
+
+  // ── LUT ─────────────────────────────────────────────────────────────
+  function parseCube(text) {
+    let size = 0;
+    const values = [];
+    for (const raw of text.split(/\r?\n/)) {
+      const line = raw.trim();
+      if (!line || line[0] === '#') continue;
+      const m = /^LUT_3D_SIZE\s+(\d+)/i.exec(line);
+      if (m) { size = parseInt(m[1], 10); continue; }
+      if (/^[A-Z_]/i.test(line)) continue;
+      const p = line.split(/\s+/);
+      if (p.length === 3) values.push(+p[0], +p[1], +p[2]);
+    }
+    if (!size || values.length !== size * size * size * 3) throw new Error('보정 데이터 파일이 손상되었습니다.');
+    return { size, grid: Float32Array.from(values) };
+  }
+
+  // 삼선형 보간. 입력 0~255, 출력 0~255 (실수).
+  function trilinear(lut, r, g, b, out) {
+    const { size, grid } = lut;
+    const last = size - 1;
+    const fr = (r / 255) * last, fg = (g / 255) * last, fb = (b / 255) * last;
+    const r0 = Math.min(last, Math.max(0, Math.floor(fr)));
+    const g0 = Math.min(last, Math.max(0, Math.floor(fg)));
+    const b0 = Math.min(last, Math.max(0, Math.floor(fb)));
+    const r1 = Math.min(last, r0 + 1), g1 = Math.min(last, g0 + 1), b1 = Math.min(last, b0 + 1);
+    const dr = fr - r0, dg = fg - g0, db = fb - b0;
+    const i000 = ((b0 * size + g0) * size + r0) * 3, i100 = ((b0 * size + g0) * size + r1) * 3;
+    const i010 = ((b0 * size + g1) * size + r0) * 3, i110 = ((b0 * size + g1) * size + r1) * 3;
+    const i001 = ((b1 * size + g0) * size + r0) * 3, i101 = ((b1 * size + g0) * size + r1) * 3;
+    const i011 = ((b1 * size + g1) * size + r0) * 3, i111 = ((b1 * size + g1) * size + r1) * 3;
+    for (let c = 0; c < 3; c++) {
+      const x00 = grid[i000 + c] + (grid[i100 + c] - grid[i000 + c]) * dr;
+      const x10 = grid[i010 + c] + (grid[i110 + c] - grid[i010 + c]) * dr;
+      const x01 = grid[i001 + c] + (grid[i101 + c] - grid[i001 + c]) * dr;
+      const x11 = grid[i011 + c] + (grid[i111 + c] - grid[i011 + c]) * dr;
+      const y0 = x00 + (x10 - x00) * dg;
+      const y1 = x01 + (x11 - x01) * dg;
+      out[c] = (y0 + (y1 - y0) * db) * 255;
+    }
+  }
+
+  // 노출(곱) → 색온도/틴트(합). 측정 도구의 미세조정과 같은 순서.
+  function applyTrimToGrid(grid, trim) {
+    const evMul = Math.pow(2, trim.ev);
+    const out = new Float32Array(grid.length);
+    for (let i = 0; i < grid.length; i += 3) {
+      const r = grid[i] * evMul + trim.warm;
+      const g = grid[i + 1] * evMul + trim.tint;
+      const b = grid[i + 2] * evMul - trim.warm;
+      out[i] = r < 0 ? 0 : r > 1 ? 1 : r;
+      out[i + 1] = g < 0 ? 0 : g > 1 ? 1 : g;
+      out[i + 2] = b < 0 ? 0 : b > 1 ? 1 : b;
+    }
+    return out;
+  }
+
+  function applyLut(data, lut) {
+    const t = [0, 0, 0];
+    for (let i = 0; i < data.length; i += 4) {
+      trilinear(lut, data[i], data[i + 1], data[i + 2], t);
+      data[i] = t[0] < 0 ? 0 : t[0] > 255 ? 255 : Math.round(t[0]);
+      data[i + 1] = t[1] < 0 ? 0 : t[1] > 255 ? 255 : Math.round(t[1]);
+      data[i + 2] = t[2] < 0 ? 0 : t[2] > 255 ? 255 : Math.round(t[2]);
+    }
+  }
+
+  function cloneImage(img) { return new ImageData(new Uint8ClampedArray(img.data), img.width, img.height); }
+
+  // 인화 시 잘려 나가는 영역(가운데 기준, 필름 이미지 비율). 비네팅은 이 영역을 기준으로 잡아야 실제 인화물 가장자리가 어두워진다.
+  function cropRect(w, h) {
+    const p = state.preset;
+    const aspect = p?.output ? p.output[0] / p.output[1] : p?.frame ? p.frame.image[0] / p.frame.image[1] : w / h;
+    let cw = w, ch = h;
+    if (cw / ch > aspect) cw = ch * aspect; else ch = cw / aspect;
+    return { x: (w - cw) / 2, y: (h - ch) / 2, w: cw, h: ch };
+  }
+
+  // 가장자리로 갈수록 어둡게. rect 의 중심이 밝고, 모서리(거리 1)에서 가장 어둡다. 중심 40%까지는 손대지 않는다.
+  function applyVignette(data, width, height, rect, strength) {
+    if (!strength) return;
+    const cx = rect.x + rect.w / 2, cy = rect.y + rect.h / 2;
+    const rx = rect.w / 2, ry = rect.h / 2;
+    const inner = 0.4, outer = 1.0, maxDark = 0.85;
+    const colSq = new Float32Array(width);
+    for (let x = 0; x < width; x++) { const nx = (x + 0.5 - cx) / rx; colSq[x] = nx * nx; }
+    for (let y = 0; y < height; y++) {
+      const ny = (y + 0.5 - cy) / ry;
+      const rowSq = ny * ny;
+      let i = y * width * 4;
+      for (let x = 0; x < width; x++, i += 4) {
+        const d = Math.sqrt(colSq[x] + rowSq) / Math.SQRT2;
+        let t = (d - inner) / (outer - inner);
+        t = t < 0 ? 0 : t > 1 ? 1 : t;
+        t = t * t * (3 - 2 * t);
+        const f = 1 - strength * maxDark * t;
+        if (f < 1) { data[i] = data[i] * f; data[i + 1] = data[i + 1] * f; data[i + 2] = data[i + 2] * f; }
+      }
+    }
+  }
+  function putImage(cv, img) { cv.width = img.width; cv.height = img.height; cv.getContext('2d').putImageData(img, 0, 0); }
+
+  function recomputeTrim() {
+    if (!state.corr) return;
+    state.trimmedCorr = { size: state.corr.size, grid: applyTrimToGrid(state.corr.grid, state.trim) };
+  }
+
+  // ── 프리셋 ──────────────────────────────────────────────────────────
+  async function loadPresets() {
+    const r = await fetch('lut/presets.json', { cache: 'no-cache' });
+    if (!r.ok) throw new Error('보정 데이터 목록을 불러오지 못했습니다.');
+    const manifest = await r.json();
+    state.presets = manifest.presets || [];
+    state.version = manifest.generated || '';
+    if (!state.presets.length) throw new Error('등록된 필름 보정 데이터가 없습니다.');
+
+    if (state.presets.length > 1) {
+      const wrap = $('presetChips');
+      wrap.innerHTML = '';
+      for (const p of state.presets) {
+        const b = document.createElement('button');
+        b.type = 'button'; b.className = 'chip'; b.textContent = p.label; b.dataset.key = p.key;
+        b.addEventListener('click', () => selectPreset(p.key).catch((err) => setStatus(err.message, true)));
+        wrap.appendChild(b);
+      }
+      wrap.hidden = false;
+      $('presetLabel').hidden = true;
+    }
+    await selectPreset(state.presets[0].key);
+  }
+
+  async function selectPreset(key) {
+    const p = state.presets.find((x) => x.key === key);
+    if (!p) return;
+    state.preset = p;
+    $('presetLabel').textContent = p.label;
+    document.querySelectorAll('#presetChips .chip').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.key === key)));
+    setStatus('보정 데이터 불러오는 중…');
+    panes.classList.add('busy');
+    try {
+      const v = encodeURIComponent(state.version);
+      const [c, s] = await Promise.all([
+        fetch(`${p.correction}?v=${v}`).then((r) => { if (!r.ok) throw new Error('보정 데이터를 불러오지 못했습니다.'); return r.text(); }).then(parseCube),
+        fetch(`${p.simulation}?v=${v}`).then((r) => { if (!r.ok) throw new Error('예상 데이터를 불러오지 못했습니다.'); return r.text(); }).then(parseCube),
+      ]);
+      state.corr = c; state.sim = s;
+      recomputeTrim();
+      setStatus('');
+      if (current()) render();
+    } finally {
+      panes.classList.remove('busy');
+    }
+  }
+
+  // ── 사진 ────────────────────────────────────────────────────────────
+  function drawScaled(source, sw, sh, max) {
+    const s = Math.min(1, max / Math.max(sw, sh));
+    const w = Math.max(1, Math.round(sw * s)), h = Math.max(1, Math.round(sh * s));
+    const c = document.createElement('canvas');
+    c.width = w; c.height = h;
+    const cx = c.getContext('2d', { willReadFrequently: true });
+    cx.imageSmoothingEnabled = true;
+    cx.imageSmoothingQuality = 'high';
+    cx.drawImage(source, 0, 0, w, h);
+    return c;
+  }
+
+  async function decodeFile(file, dir) {
+    const url = URL.createObjectURL(file);
+    try {
+      const img = new Image();
+      img.src = url;
+      await img.decode();
+      // 브라우저가 EXIF 회전을 적용한 뒤의 크기 — 세로 사진이 눕지 않는다.
+      const full = drawScaled(img, img.naturalWidth, img.naturalHeight, EXPORT_MAX);
+      const prev = drawScaled(full, full.width, full.height, PREVIEW_MAX);
+      return {
+        // NFC 정규화: 맥/아이폰에서 온 한글 파일명이 자모 분리된 채(ㄱㅣㅁ…) 저장되는 것을 막는다.
+        name: (file.name || 'photo').replace(/\.[^.]+$/, '').normalize('NFC'),
+        srcFull: full,
+        srcPreview: prev.getContext('2d').getImageData(0, 0, prev.width, prev.height),
+        dir: dir || null, // 끌어다 놓은 폴더 — 있으면 보정본을 그 폴더 안 하위 폴더에 자동 저장
+      };
+    } finally {
+      URL.revokeObjectURL(url);
+    }
+  }
+
+  const SUBFOLDER = '색감조정완료'; // 끌어다 놓은 원본 폴더 안에 만들어지는 저장 폴더
+  const isImageFile = (f) => f && (f.type?.startsWith('image/') || /\.(jpe?g|png|webp|heic|heif|tiff?)$/i.test(f.name));
+  const isOurOutput = (name) => /_(보정|썸네일)(_\d+)?\.png$/i.test(name);
+
+  // 끌어다 놓은 것을 받는다. 폴더면 안의 사진을 전부 불러오고 그 폴더를 저장 위치로 기억한다.
+  // (폴더 선택창이 안 되는 PC가 있어서, 선택창 없이 권한을 받을 수 있는 드래그 방식이 기본이다.)
+  async function loadDropped(dt) {
+    const items = Array.from(dt?.items || []);
+    const plainFiles = [];
+    let handled = false;
+    for (const item of items) {
+      if (item.kind !== 'file') continue;
+      let handle = null;
+      if (typeof item.getAsFileSystemHandle === 'function') {
+        try { handle = await item.getAsFileSystemHandle(); } catch { handle = null; }
+      }
+      if (handle && handle.kind === 'directory') {
+        handled = true;
+        setStatus(`"${handle.name}" 폴더 여는 중…`);
+        let perm = 'prompt';
+        try {
+          perm = await handle.queryPermission({ mode: 'readwrite' });
+          if (perm !== 'granted') perm = await handle.requestPermission({ mode: 'readwrite' });
+        } catch { perm = 'denied'; }
+        const files = [];
+        try {
+          for await (const [name, entry] of handle.entries()) {
+            if (entry.kind !== 'file' || isOurOutput(name)) continue;
+            const f = await entry.getFile();
+            if (isImageFile(f)) files.push(f);
+          }
+        } catch (err) {
+          setStatus(`"${handle.name}" 폴더를 읽지 못했어요: ${err.message || err}`, true);
+          continue;
+        }
+        files.sort((a, b) => a.name.localeCompare(b.name, 'ko'));
+        if (!files.length) { setStatus(`"${handle.name}" 폴더에 사진이 없어요.`, true); continue; }
+        await loadFiles(files, perm === 'granted' ? handle : null);
+        if (perm !== 'granted') setStatus(`"${handle.name}" 폴더 쓰기 허용을 안 눌러서, 저장은 일반 다운로드로 됩니다.`, true);
+      } else {
+        const f = item.getAsFile();
+        if (f) plainFiles.push(f);
+      }
+    }
+    if (plainFiles.length) { handled = true; await loadFiles(plainFiles); }
+    if (!handled && dt?.files?.length) await loadFiles(dt.files);
+  }
+
+  // 여러 장을 한 번에 받는다. 이미 열린 사진이 있으면 뒤에 덧붙인다.
+  async function loadFiles(fileList, dir) {
+    const files = Array.from(fileList || []).filter(isImageFile);
+    if (!files.length) return;
+    const failed = [];
+    const startIndex = state.items.length;
+    for (let i = 0; i < files.length; i++) {
+      setStatus(`사진 여는 중… ${i + 1}/${files.length}`);
+      try {
+        state.items.push(await decodeFile(files[i], dir));
+      } catch (err) {
+        failed.push(files[i].name);
+      }
+    }
+    if (!state.items.length) {
+      setStatus('사진을 열 수 없어요. 다른 사진을 골라주세요.', true);
+      return;
+    }
+    $('pick').hidden = true;
+    $('work').hidden = false;
+    rebuildStrip();
+    setActive(startIndex < state.items.length ? startIndex : state.items.length - 1);
+    setStatus(failed.length ? `${failed.length}장은 열 수 없어 건너뛰었어요: ${failed.join(', ')}` : '', failed.length > 0);
+  }
+
+  // ── 썸네일 줄 ───────────────────────────────────────────────────────
+  function rebuildStrip() {
+    const strip = $('strip');
+    strip.innerHTML = '';
+    state.items.forEach((it, i) => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'thumb'; b.title = it.name;
+      const c = document.createElement('canvas');
+      const s = 76 / it.srcPreview.height;
+      c.width = Math.max(1, Math.round(it.srcPreview.width * s)); c.height = 76;
+      const tmp = document.createElement('canvas');
+      tmp.width = it.srcPreview.width; tmp.height = it.srcPreview.height;
+      tmp.getContext('2d').putImageData(it.srcPreview, 0, 0);
+      const cx = c.getContext('2d');
+      cx.imageSmoothingQuality = 'high';
+      cx.drawImage(tmp, 0, 0, c.width, c.height);
+      const no = document.createElement('span');
+      no.className = 'no'; no.textContent = String(i + 1);
+      b.append(c, no);
+      b.addEventListener('click', () => setActive(i));
+      strip.appendChild(b);
+    });
+    const add = document.createElement('button');
+    add.type = 'button'; add.className = 'add'; add.textContent = '+ 추가';
+    add.addEventListener('click', () => $('fileInput').click());
+    strip.appendChild(add);
+
+    const many = state.items.length > 1;
+    $('stripWrap').hidden = state.items.length === 0;
+    $('downloadAllBtn').hidden = !many;
+    $('downloadAllBtn').textContent = `전부 저장 (${state.items.length}장)`;
+    $('downloadBtn').textContent = many ? '이 사진만 저장' : '보정본 파일로 저장';
+    $('downloadAllBtn').classList.toggle('primary', many && !touchDevice);
+    $('downloadBtn').classList.toggle('primary', !many && !touchDevice);
+  }
+
+  function setActive(i) {
+    if (i < 0 || i >= state.items.length) return;
+    state.active = i;
+    document.querySelectorAll('.strip .thumb').forEach((b, k) => b.setAttribute('aria-current', String(k === i)));
+    const el = document.querySelectorAll('.strip .thumb')[i];
+    if (el) el.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    $('stripInfo').textContent = state.items.length > 1
+      ? `${i + 1} / ${state.items.length}장 · ${current().name} — 썸네일 클릭 또는 ← → 키로 이동`
+      : current().name;
+    updateFolderLine();
+    render();
+  }
+
+  // 저장 위치 안내: 끌어다 놓은 폴더가 있으면 그 안의 하위 폴더(자동), 아니면 선택창으로 고른 폴더.
+  function updateFolderLine() {
+    const it = current();
+    $('folderLine').hidden = !it;
+    if (!it) return;
+    $('folderName').textContent = it.dir
+      ? `${it.dir.name}\\${SUBFOLDER} (끌어다 놓은 폴더 안에 자동 저장)`
+      : '다운로드 폴더 — 폴더째 끌어다 놓으면 그 폴더 안 색감조정완료 에 자동 저장돼요';
+  }
+
+  let scratch = null;
+  // 실물 필름처럼 흰 테두리를 두르고, 앱 기본 배치처럼 가운데 기준으로 이미지 영역 비율에 맞춰 자른다.
+  function drawFramed(cv, img, frame) {
+    const s = PREVIEW_MAX / Math.max(frame.film[0], frame.film[1]);
+    const W = Math.round(frame.film[0] * s), H = Math.round(frame.film[1] * s);
+    const ix = frame.offset[0] * s, iy = frame.offset[1] * s;
+    const iw = frame.image[0] * s, ih = frame.image[1] * s;
+    const aspect = frame.image[0] / frame.image[1];
+    let cw = img.width, ch = img.height;
+    if (cw / ch > aspect) cw = ch * aspect; else ch = cw / aspect;
+    const cx = (img.width - cw) / 2, cy = (img.height - ch) / 2;
+
+    if (!scratch) scratch = document.createElement('canvas');
+    scratch.width = img.width; scratch.height = img.height;
+    scratch.getContext('2d').putImageData(img, 0, 0);
+
+    cv.width = W; cv.height = H;
+    const ctx = cv.getContext('2d');
+    ctx.fillStyle = '#fbfaf7';
+    ctx.fillRect(0, 0, W, H);
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(scratch, cx, cy, cw, ch, ix, iy, iw, ih);
+  }
+
+  // 원본·보정본·인화 예상을 한 번에 그린다. 인화 예상 = 보정본에 필름 시뮬레이션을 한 번 더 입힌 것.
+  function render() {
+    const it = current();
+    if (!it || !state.trimmedCorr) return;
+    const frame = state.preset?.frame;
+    putImage(CV.original, it.srcPreview);
+
+    const corrected = cloneImage(it.srcPreview);
+    applyVignette(corrected.data, corrected.width, corrected.height, cropRect(corrected.width, corrected.height), state.vignette);
+    applyLut(corrected.data, state.trimmedCorr);
+    putImage(CV.corrected, corrected);
+
+    const predicted = cloneImage(corrected);
+    applyLut(predicted.data, state.sim);
+    if (frame) {
+      drawFramed(CV.predicted, predicted, frame);
+      drawFramed(CV.heroOrig, it.srcPreview, frame); // 비교 손잡이용 원본도 같은 틀·같은 잘림
+    } else {
+      putImage(CV.predicted, predicted);
+      putImage(CV.heroOrig, it.srcPreview);
+    }
+    applySplit();
+  }
+
+  let timer = null;
+  function renderSoon() { clearTimeout(timer); timer = setTimeout(render, DEBOUNCE_MS); }
+
+  // ── 비교 손잡이 ─────────────────────────────────────────────────────
+  function applySplit() {
+    const pct = state.split * 100;
+    CV.heroOrig.style.clipPath = `inset(0 ${100 - pct}% 0 0)`;
+    $('handle').style.left = pct + '%';
+  }
+  function splitFromEvent(e) {
+    const r = heroStage.getBoundingClientRect();
+    state.split = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width));
+    applySplit();
+  }
+  let dragging = false;
+  heroStage.addEventListener('pointerdown', (e) => { dragging = true; heroStage.setPointerCapture(e.pointerId); splitFromEvent(e); });
+  heroStage.addEventListener('pointermove', (e) => { if (dragging) splitFromEvent(e); });
+  ['pointerup', 'pointercancel'].forEach((ev) => heroStage.addEventListener(ev, () => { dragging = false; }));
+
+  // ── 저장 / 공유 ─────────────────────────────────────────────────────
+  // 필름 규격(예: 미니 세로 600×800)에 정확히 맞춰 저장한다. 비율이 다르면 가운데 기준으로 자른다.
+  async function makeExportFile(item) {
+    const src = item.srcFull;
+    const out = state.preset?.output;
+    const c = document.createElement('canvas');
+    const cx = c.getContext('2d', { willReadFrequently: true });
+    if (out) {
+      const [W, H] = out;
+      const aspect = W / H;
+      let cw = src.width, ch = src.height;
+      if (cw / ch > aspect) cw = ch * aspect; else ch = cw / aspect;
+      const sx = (src.width - cw) / 2, sy = (src.height - ch) / 2;
+      c.width = W; c.height = H;
+      cx.imageSmoothingEnabled = true;
+      cx.imageSmoothingQuality = 'high';
+      cx.drawImage(src, sx, sy, cw, ch, 0, 0, W, H);
+    } else {
+      c.width = src.width; c.height = src.height;
+      cx.drawImage(src, 0, 0);
+    }
+    const img = cx.getImageData(0, 0, c.width, c.height);
+    // 저장 파일은 이미 잘린 상태이므로 화면 전체가 곧 인화 영역이다.
+    applyVignette(img.data, c.width, c.height, out ? { x: 0, y: 0, w: c.width, h: c.height } : cropRect(c.width, c.height), state.vignette);
+    applyLut(img.data, state.trimmedCorr);
+    cx.putImageData(img, 0, 0);
+    const blob = await new Promise((res) => c.toBlob(res, 'image/png'));
+    if (!blob) throw new Error('파일을 만들지 못했습니다.');
+    return new File([blob], `${item.name}_보정.png`, { type: 'image/png' });
+  }
+
+
+  function canShareFiles() {
+    try {
+      const probe = new File([new Uint8Array(1)], 'p.png', { type: 'image/png' });
+      return !!(navigator.share && navigator.canShare && navigator.canShare({ files: [probe] }));
+    } catch { return false; }
+  }
+
+  async function withBusy(btn, label, fn) {
+    const prev = btn.textContent;
+    btn.disabled = true; btn.textContent = label;
+    try { return await fn(); }
+    finally { btn.disabled = false; btn.textContent = prev; }
+  }
+
+  function triggerDownload(blob, name) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+  }
+  const sizeLabel = () => (state.preset?.output ? `${state.preset.output[0]}×${state.preset.output[1]} ` : '');
+
+  // ── 저장 위치 규칙 ────────────────────────────────────────────────────
+  // 폴더째 끌어다 놓은 사진 → 그 폴더 안 색감조정완료 하위 폴더에 바로 쓴다 (선택창 없음).
+  // 낱장으로 들어온 사진 → 브라우저 다운로드 폴더. (낱장 파일에서는 원래 폴더를 알 수 없다 — 브라우저 제한)
+  // 예전의 "폴더 선택창" 방식은 이 PC 크롬에서 선택 직후 취소 처리되는 문제가 있어 완전히 뺐다.
+  try { indexedDB.deleteDatabase('polarit'); } catch { /* 예전 버전이 기억해 둔 폴더 정리 */ }
+
+  async function writeToFolder(dir, name, blob) {
+    const fh = await dir.getFileHandle(name, { create: true });
+    const w = await fh.createWritable();
+    await w.write(blob);
+    await w.close();
+  }
+
+  // 한 장 저장. 사진이 온 폴더가 있으면 그 안 하위 폴더에, 없으면 다운로드.
+  async function saveOne(item, file, name) {
+    if (item.dir) {
+      try {
+        const sub = await item.dir.getDirectoryHandle(SUBFOLDER, { create: true });
+        await writeToFolder(sub, name, file);
+      } catch (err) {
+        if (err && (err.name === 'NotFoundError' || err.name === 'NotAllowedError')) {
+          throw new Error(`"${item.dir.name}" 폴더에 쓸 수 없어요 — 폴더가 옮겨졌거나 이름이 바뀌었거나 허용을 안 눌렀어요. 폴더를 다시 끌어다 놓아 주세요.`);
+        }
+        throw err;
+      }
+      return `${item.dir.name}\\${SUBFOLDER}`;
+    }
+    triggerDownload(file, name);
+    return null;
+  }
+
+  async function onShare() {
+    await withBusy($('shareBtn'), '보정본 만드는 중…', async () => {
+      const file = await makeExportFile(current());
+      try {
+        await navigator.share({ files: [file], title: file.name });
+        setStatus('공유했어요 ✓ 인스탁스 앱에서 그대로 인화하면 됩니다.');
+      } catch (err) {
+        if (err && err.name === 'AbortError') return;
+        setStatus('공유가 안 되면 "파일로 저장"을 눌러주세요.', true);
+      }
+    });
+  }
+
+  async function onDownload() {
+    const item = current();
+    await withBusy($('downloadBtn'), '보정본 만드는 중…', async () => {
+      try {
+        const file = await makeExportFile(item);
+        const where = await saveOne(item, file, file.name);
+        setStatus(where
+          ? `저장됨 ✓ ${sizeLabel()}PNG "${file.name}" → ${where} — 인스탁스 앱에서 이 파일을 열어 인화하세요.`
+          : `저장됨 ✓ ${sizeLabel()}PNG "${file.name}" (다운로드 폴더) — 인스탁스 앱에서 이 파일을 열어 인화하세요.`);
+      } catch (err) {
+        setStatus('저장 중 문제가 생겼어요: ' + (err.message || err), true);
+      }
+    });
+  }
+
+  async function onDownloadAll() {
+    const btn = $('downloadAllBtn');
+    const prev = btn.textContent;
+    btn.disabled = true; $('downloadBtn').disabled = true;
+    try {
+      const used = new Set();
+      const places = new Set();
+      let downloads = 0;
+      for (let i = 0; i < state.items.length; i++) {
+        btn.textContent = `저장 중… ${i + 1}/${state.items.length}`;
+        await new Promise((r) => setTimeout(r, 0)); // 버튼 글자가 갱신될 틈
+        const file = await makeExportFile(state.items[i]);
+        let name = file.name;
+        for (let k = 2; used.has(name); k++) name = file.name.replace(/\.png$/, `_${k}.png`); // 같은 이름 충돌 방지
+        used.add(name);
+        const where = await saveOne(state.items[i], file, name);
+        if (where) places.add(where); else { downloads++; await new Promise((r) => setTimeout(r, 300)); }
+      }
+      const parts = [];
+      if (places.size) parts.push(`${state.items.length - downloads}장 → ${Array.from(places).join(', ')}`);
+      if (downloads) parts.push(`${downloads}장 → 다운로드 폴더 (브라우저가 "여러 파일 다운로드 허용"을 물으면 허용)`);
+      setStatus(`저장됨 ✓ ${sizeLabel()}PNG · ${parts.join(' · ')}`);
+    } catch (err) {
+      setStatus('저장 중 문제가 생겼어요: ' + (err.message || err), true);
+    } finally {
+      btn.textContent = prev; btn.disabled = false; $('downloadBtn').disabled = false;
+    }
+  }
+
+  // ── 조정 ────────────────────────────────────────────────────────────
+  const clampLim = (v, lim) => Math.max(-lim, Math.min(lim, v));
+  const stepsOf = (k) => Math.round(state.trim[k] / STEP[k]);
+  const fmtSigned = (v) => (v > 0 ? '+' : '') + v;
+
+  function syncTuneUI() {
+    $('ev').value = Math.round((state.trim.ev / LIMIT.ev) * 100);
+    $('warm').value = Math.round((state.trim.warm / LIMIT.warm) * 100);
+    $('tint').value = Math.round((-state.trim.tint / LIMIT.tint) * 100); // 슬라이더 오른쪽 = 마젠타 (내부 값은 +가 그린)
+    $('vig').value = Math.round(state.vignette * 100);
+    $('valEv').textContent = fmtSigned(+$('ev').value);
+    $('valWarm').textContent = fmtSigned(+$('warm').value);
+    $('valTint').textContent = fmtSigned(+$('tint').value);
+    $('valVig').textContent = String(+$('vig').value);
+
+    const parts = [];
+    if (stepsOf('ev')) parts.push(`밝기 ${fmtSigned(stepsOf('ev'))}단계`);
+    if (stepsOf('warm')) parts.push(stepsOf('warm') > 0 ? `따뜻하게 ${stepsOf('warm')}단계` : `차갑게 ${-stepsOf('warm')}단계`);
+    if (stepsOf('tint')) parts.push(stepsOf('tint') > 0 ? `그린 쪽 ${stepsOf('tint')}단계` : `마젠타 쪽 ${-stepsOf('tint')}단계`);
+    if (state.vignette) parts.push(`비네팅 ${Math.round(state.vignette * 100)}`);
+    $('tuneSummary').textContent = parts.length ? parts.join(' · ') : '조정 없음';
+
+    document.querySelectorAll('.nudge').forEach((b) => {
+      const k = b.dataset.nudge, d = +b.dataset.dir;
+      b.disabled = Math.abs(clampLim(state.trim[k] + d * STEP[k], LIMIT[k]) - state.trim[k]) < 1e-9;
+    });
+  }
+  function afterTrimChange() { syncTuneUI(); recomputeTrim(); renderSoon(); }
+  function nudge(k, dir) {
+    state.trim[k] = clampLim(state.trim[k] + dir * STEP[k], LIMIT[k]);
+    if (Math.abs(state.trim[k]) < 1e-9) state.trim[k] = 0;
+    afterTrimChange();
+  }
+  function onSlider() {
+    state.trim = {
+      ev: (+$('ev').value / 100) * LIMIT.ev,
+      warm: (+$('warm').value / 100) * LIMIT.warm,
+      tint: (-$('tint').value / 100) * LIMIT.tint, // 오른쪽(+) = 마젠타 → 내부 값은 음수
+    };
+    state.vignette = +$('vig').value / 100;
+    afterTrimChange();
+  }
+  function resetTune() { state.trim = { ev: 0, warm: 0, tint: 0 }; state.vignette = 0; afterTrimChange(); }
+
+  // ── 상태 표시 ───────────────────────────────────────────────────────
+  function setStatus(msg, isErr) {
+    const s = $('status');
+    s.textContent = msg || '';
+    s.className = 'narrow ' + (msg ? (isErr ? 'err' : 'ok') : '');
+  }
+
+  // ── 이벤트 ──────────────────────────────────────────────────────────
+  $('fileInput').addEventListener('change', (e) => { const fs = Array.from(e.target.files); e.target.value = ''; loadFiles(fs); });
+  const card = $('pickcard');
+  ['dragover', 'dragenter'].forEach((ev) => card.addEventListener(ev, (e) => { e.preventDefault(); card.classList.add('drag'); }));
+  ['dragleave', 'drop'].forEach((ev) => card.addEventListener(ev, (e) => { e.preventDefault(); card.classList.remove('drag'); }));
+  card.addEventListener('drop', (e) => loadDropped(e.dataTransfer));
+  // 작업 화면 위에 떨어뜨려도 뒤에 덧붙인다.
+  const work = $('work');
+  ['dragover', 'dragenter'].forEach((ev) => work.addEventListener(ev, (e) => e.preventDefault()));
+  work.addEventListener('drop', (e) => { e.preventDefault(); loadDropped(e.dataTransfer); });
+  document.addEventListener('keydown', (e) => {
+    const t = e.target;
+    if (work.hidden || (t && t.matches && t.matches('input, textarea, button'))) return;
+    if (e.key === 'ArrowLeft') setActive(state.active - 1);
+    if (e.key === 'ArrowRight') setActive(state.active + 1);
+  });
+
+  document.querySelectorAll('.nudge').forEach((b) => b.addEventListener('click', () => nudge(b.dataset.nudge, +b.dataset.dir)));
+  ['ev', 'warm', 'tint', 'vig'].forEach((id) => $(id).addEventListener('input', onSlider));
+  $('resetBtn').addEventListener('click', resetTune);
+  $('shareBtn').addEventListener('click', onShare);
+  $('downloadBtn').addEventListener('click', onDownload);
+  $('downloadAllBtn').addEventListener('click', onDownloadAll);
+  $('anotherBtn').addEventListener('click', () => { $('work').hidden = true; $('pick').hidden = false; state.items = []; state.active = -1; rebuildStrip(); setStatus(''); });
+
+  // 공유 시트는 터치 기기에서만 의미가 있다 — PC에선 파일 저장이 메인.
+  const touchDevice = matchMedia('(pointer: coarse)').matches;
+  if (touchDevice && canShareFiles()) {
+    $('shareBtn').hidden = false;
+  } else {
+    $('downloadBtn').classList.add('primary');
+  }
+
+  syncTuneUI();
+  window.__loadFiles = loadFiles; // 로컬 테스트용
+  window.__loadDropped = loadDropped;
+
+  loadPresets().catch((err) => {
+    $('presetLabel').textContent = '보정 데이터 없음';
+    setStatus(err.message, true);
+  });
+})();
+</script>
+</body>
+</html>

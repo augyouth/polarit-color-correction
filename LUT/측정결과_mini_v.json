@@ -1,0 +1,725 @@
+{
+  "media": "mini_v",
+  "samples": [
+    {
+      "name": "N0",
+      "group": "neutral",
+      "index": 0,
+      "reference": [
+        0,
+        0,
+        0
+      ],
+      "measured": [
+        51,
+        51,
+        51
+      ]
+    },
+    {
+      "name": "N16",
+      "group": "neutral",
+      "index": 1,
+      "reference": [
+        16,
+        16,
+        16
+      ],
+      "measured": [
+        63,
+        65,
+        64
+      ]
+    },
+    {
+      "name": "N32",
+      "group": "neutral",
+      "index": 2,
+      "reference": [
+        32,
+        32,
+        32
+      ],
+      "measured": [
+        83,
+        84,
+        84
+      ]
+    },
+    {
+      "name": "N48",
+      "group": "neutral",
+      "index": 3,
+      "reference": [
+        48,
+        48,
+        48
+      ],
+      "measured": [
+        99,
+        99,
+        99
+      ]
+    },
+    {
+      "name": "N64",
+      "group": "neutral",
+      "index": 4,
+      "reference": [
+        64,
+        64,
+        64
+      ],
+      "measured": [
+        116,
+        116,
+        116
+      ]
+    },
+    {
+      "name": "N80",
+      "group": "neutral",
+      "index": 5,
+      "reference": [
+        80,
+        80,
+        80
+      ],
+      "measured": [
+        131,
+        132,
+        134
+      ]
+    },
+    {
+      "name": "N96",
+      "group": "neutral",
+      "index": 6,
+      "reference": [
+        96,
+        96,
+        96
+      ],
+      "measured": [
+        140,
+        141,
+        143
+      ]
+    },
+    {
+      "name": "N112",
+      "group": "neutral",
+      "index": 7,
+      "reference": [
+        112,
+        112,
+        112
+      ],
+      "measured": [
+        158,
+        159,
+        161
+      ]
+    },
+    {
+      "name": "N128",
+      "group": "neutral",
+      "index": 8,
+      "reference": [
+        128,
+        128,
+        128
+      ],
+      "measured": [
+        172,
+        172,
+        174
+      ]
+    },
+    {
+      "name": "N144",
+      "group": "neutral",
+      "index": 9,
+      "reference": [
+        144,
+        144,
+        144
+      ],
+      "measured": [
+        186,
+        187,
+        187
+      ]
+    },
+    {
+      "name": "N160",
+      "group": "neutral",
+      "index": 10,
+      "reference": [
+        160,
+        160,
+        160
+      ],
+      "measured": [
+        195,
+        196,
+        198
+      ]
+    },
+    {
+      "name": "N176",
+      "group": "neutral",
+      "index": 11,
+      "reference": [
+        176,
+        176,
+        176
+      ],
+      "measured": [
+        205,
+        207,
+        207
+      ]
+    },
+    {
+      "name": "N192",
+      "group": "neutral",
+      "index": 12,
+      "reference": [
+        192,
+        192,
+        192
+      ],
+      "measured": [
+        217,
+        223,
+        223
+      ]
+    },
+    {
+      "name": "N204",
+      "group": "neutral",
+      "index": 13,
+      "reference": [
+        204,
+        204,
+        204
+      ],
+      "measured": [
+        230,
+        236,
+        236
+      ]
+    },
+    {
+      "name": "N216",
+      "group": "neutral",
+      "index": 14,
+      "reference": [
+        216,
+        216,
+        216
+      ],
+      "measured": [
+        236,
+        240,
+        240
+      ]
+    },
+    {
+      "name": "N228",
+      "group": "neutral",
+      "index": 15,
+      "reference": [
+        228,
+        228,
+        228
+      ],
+      "measured": [
+        242,
+        246,
+        247
+      ]
+    },
+    {
+      "name": "N236",
+      "group": "neutral",
+      "index": 16,
+      "reference": [
+        236,
+        236,
+        236
+      ],
+      "measured": [
+        247,
+        249,
+        248
+      ]
+    },
+    {
+      "name": "N244",
+      "group": "neutral",
+      "index": 17,
+      "reference": [
+        244,
+        244,
+        244
+      ],
+      "measured": [
+        249,
+        251,
+        250
+      ]
+    },
+    {
+      "name": "N250",
+      "group": "neutral",
+      "index": 18,
+      "reference": [
+        250,
+        250,
+        250
+      ],
+      "measured": [
+        249,
+        251,
+        250
+      ]
+    },
+    {
+      "name": "N255",
+      "group": "neutral",
+      "index": 19,
+      "reference": [
+        255,
+        255,
+        255
+      ],
+      "measured": [
+        251,
+        253,
+        252
+      ]
+    },
+    {
+      "name": "R255",
+      "group": "hue",
+      "index": 20,
+      "reference": [
+        255,
+        0,
+        0
+      ],
+      "measured": [
+        186,
+        68,
+        55
+      ]
+    },
+    {
+      "name": "R176",
+      "group": "hue",
+      "index": 21,
+      "reference": [
+        176,
+        0,
+        0
+      ],
+      "measured": [
+        171,
+        60,
+        56
+      ]
+    },
+    {
+      "name": "R96",
+      "group": "hue",
+      "index": 22,
+      "reference": [
+        96,
+        0,
+        0
+      ],
+      "measured": [
+        130,
+        66,
+        56
+      ]
+    },
+    {
+      "name": "G255",
+      "group": "hue",
+      "index": 23,
+      "reference": [
+        0,
+        255,
+        0
+      ],
+      "measured": [
+        160,
+        207,
+        126
+      ]
+    },
+    {
+      "name": "G176",
+      "group": "hue",
+      "index": 24,
+      "reference": [
+        0,
+        176,
+        0
+      ],
+      "measured": [
+        73,
+        166,
+        68
+      ]
+    },
+    {
+      "name": "G96",
+      "group": "hue",
+      "index": 25,
+      "reference": [
+        0,
+        96,
+        0
+      ],
+      "measured": [
+        37,
+        138,
+        59
+      ]
+    },
+    {
+      "name": "B255",
+      "group": "hue",
+      "index": 26,
+      "reference": [
+        0,
+        0,
+        255
+      ],
+      "measured": [
+        27,
+        93,
+        172
+      ]
+    },
+    {
+      "name": "B176",
+      "group": "hue",
+      "index": 27,
+      "reference": [
+        0,
+        0,
+        176
+      ],
+      "measured": [
+        30,
+        63,
+        153
+      ]
+    },
+    {
+      "name": "B96",
+      "group": "hue",
+      "index": 28,
+      "reference": [
+        0,
+        0,
+        96
+      ],
+      "measured": [
+        32,
+        54,
+        123
+      ]
+    },
+    {
+      "name": "C255",
+      "group": "hue",
+      "index": 29,
+      "reference": [
+        0,
+        255,
+        255
+      ],
+      "measured": [
+        154,
+        217,
+        214
+      ]
+    },
+    {
+      "name": "C176",
+      "group": "hue",
+      "index": 30,
+      "reference": [
+        0,
+        176,
+        176
+      ],
+      "measured": [
+        32,
+        185,
+        192
+      ]
+    },
+    {
+      "name": "C96",
+      "group": "hue",
+      "index": 31,
+      "reference": [
+        0,
+        96,
+        96
+      ],
+      "measured": [
+        32,
+        140,
+        134
+      ]
+    },
+    {
+      "name": "M255",
+      "group": "hue",
+      "index": 32,
+      "reference": [
+        255,
+        0,
+        255
+      ],
+      "measured": [
+        198,
+        106,
+        191
+      ]
+    },
+    {
+      "name": "M176",
+      "group": "hue",
+      "index": 33,
+      "reference": [
+        176,
+        0,
+        176
+      ],
+      "measured": [
+        165,
+        79,
+        170
+      ]
+    },
+    {
+      "name": "M96",
+      "group": "hue",
+      "index": 34,
+      "reference": [
+        96,
+        0,
+        96
+      ],
+      "measured": [
+        111,
+        70,
+        136
+      ]
+    },
+    {
+      "name": "Y255",
+      "group": "hue",
+      "index": 35,
+      "reference": [
+        255,
+        255,
+        0
+      ],
+      "measured": [
+        228,
+        218,
+        106
+      ]
+    },
+    {
+      "name": "Y176",
+      "group": "hue",
+      "index": 36,
+      "reference": [
+        176,
+        176,
+        0
+      ],
+      "measured": [
+        208,
+        198,
+        70
+      ]
+    },
+    {
+      "name": "Y96",
+      "group": "hue",
+      "index": 37,
+      "reference": [
+        96,
+        96,
+        0
+      ],
+      "measured": [
+        152,
+        147,
+        57
+      ]
+    },
+    {
+      "name": "SKIN1",
+      "group": "skin",
+      "index": 38,
+      "reference": [
+        244,
+        214,
+        190
+      ],
+      "measured": [
+        250,
+        250,
+        248
+      ]
+    },
+    {
+      "name": "SKIN2",
+      "group": "skin",
+      "index": 39,
+      "reference": [
+        232,
+        196,
+        168
+      ],
+      "measured": [
+        243,
+        242,
+        235
+      ]
+    },
+    {
+      "name": "SKIN3",
+      "group": "skin",
+      "index": 40,
+      "reference": [
+        216,
+        176,
+        148
+      ],
+      "measured": [
+        227,
+        220,
+        212
+      ]
+    },
+    {
+      "name": "SKIN4",
+      "group": "skin",
+      "index": 41,
+      "reference": [
+        198,
+        154,
+        126
+      ],
+      "measured": [
+        216,
+        196,
+        183
+      ]
+    },
+    {
+      "name": "SKIN5",
+      "group": "skin",
+      "index": 42,
+      "reference": [
+        176,
+        132,
+        106
+      ],
+      "measured": [
+        202,
+        175,
+        153
+      ]
+    },
+    {
+      "name": "SKIN6",
+      "group": "skin",
+      "index": 43,
+      "reference": [
+        150,
+        110,
+        86
+      ],
+      "measured": [
+        180,
+        150,
+        132
+      ]
+    },
+    {
+      "name": "HL1",
+      "group": "highlight",
+      "index": 44,
+      "reference": [
+        255,
+        250,
+        245
+      ],
+      "measured": [
+        252,
+        254,
+        253
+      ]
+    },
+    {
+      "name": "HL2",
+      "group": "highlight",
+      "index": 45,
+      "reference": [
+        252,
+        246,
+        240
+      ],
+      "measured": [
+        252,
+        253,
+        253
+      ]
+    },
+    {
+      "name": "HL3",
+      "group": "highlight",
+      "index": 46,
+      "reference": [
+        250,
+        240,
+        232
+      ],
+      "measured": [
+        250,
+        252,
+        251
+      ]
+    },
+    {
+      "name": "HL4",
+      "group": "highlight",
+      "index": 47,
+      "reference": [
+        245,
+        234,
+        224
+      ],
+      "measured": [
+        244,
+        247,
+        246
+      ]
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "generated": "2026-11-16T01:45:40.545Z",
+  "presets": [
+    {
+      "key": "mini_v",
+      "label": "인스탁스 미니 (세로)",
+      "correction": "lut/mini_v.correction.cube",
+      "simulation": "lut/mini_v.simulation.cube",
+      "frame": {
+        "film": [
+          54,
+          86
+        ],
+        "image": [
+          46,
+          62
+        ],
+        "offset": [
+          4,
+          4
+        ]
+      },
+      "output": [
+        600,
+        800
+      ],
+      "measuredAt": "2026-09-09T10:58:08.351Z"
+    }
+  ]
+}

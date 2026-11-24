@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>필름 색보정 대시보드</title>
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #f4f3f1;
+    --panel: #ffffff;
+    --border: #e2ded9;
+    --text: #2a2622;
+    --muted: #8a8378;
+    --accent: #b5502f;
+    --accent-soft: #f1e3dc;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font-family: -apple-system, "Malgun Gothic", "Segoe UI", sans-serif;
+    display: flex; min-height: 100vh;
+  }
+  #left {
+    flex: 1 1 60%; padding: 28px; display: flex; flex-direction: column; gap: 16px;
+    min-width: 0;
+  }
+  #right {
+    flex: 0 0 380px; background: var(--panel); border-left: 1px solid var(--border);
+    padding: 28px 24px; overflow-y: auto;
+  }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  .sub { color: var(--muted); font-size: 13px; margin-bottom: 8px; }
+
+  #dropzone {
+    border: 2px dashed var(--border); border-radius: 14px; flex: 1;
+    display: flex; align-items: center; justify-content: center; flex-direction: column;
+    gap: 10px; color: var(--muted); cursor: pointer; transition: border-color .15s, background .15s;
+    min-height: 200px; position: relative; overflow: hidden; background: var(--panel);
+  }
+  #dropzone.drag { border-color: var(--accent); background: var(--accent-soft); }
+  #dropzone input { display: none; }
+  #dropzone .hint { font-size: 14px; }
+  #dropzone .hint b { color: var(--accent); }
+
+  #compare {
+    display: none; flex: 1; gap: 14px; min-height: 0;
+  }
+  #compare.show { display: flex; }
+  .pane { flex: 1; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+  .pane .label { font-size: 13px; color: var(--muted); font-weight: 600; }
+  .imgbox {
+    flex: 1; background: #1c1a18; border-radius: 12px; overflow: hidden;
+    display: flex; align-items: center; justify-content: center; min-height: 0;
+  }
+  .imgbox img { max-width: 100%; max-height: 100%; object-fit: contain; display: block; }
+
+  #modeRow { display: flex; gap: 8px; align-items: center; }
+  .modeBtn {
+    padding: 7px 14px; border-radius: 20px; border: 1px solid var(--border);
+    background: var(--panel); color: var(--text); font-size: 13px; cursor: pointer;
+  }
+  .modeBtn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+  #newPhotoBtn {
+    margin-left: auto; font-size: 13px; color: var(--muted); background: none;
+    border: 1px solid var(--border); border-radius: 20px; padding: 7px 14px; cursor: pointer;
+  }
+
+  .group { margin-bottom: 22px; }
+  .group h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 0 0 10px; }
+  .row { margin-bottom: 16px; }
+  .row .rowhead { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px; }
+  .row .rowhead .val { color: var(--accent); font-variant-numeric: tabular-nums; }
+  input[type=range] {
+    width: 100%; accent-color: var(--accent);
+  }
+  .presetRow { display: flex; gap: 8px; }
+  .presetRow button {
+    flex: 1; padding: 8px; border-radius: 8px; border: 1px solid var(--border);
+    background: var(--panel); cursor: pointer; font-size: 13px;
+  }
+  .presetRow button.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  #saveBtn {
+    width: 100%; padding: 12px; border-radius: 10px; border: none;
+    background: var(--accent); color: #fff; font-size: 15px; font-weight: 600; cursor: pointer;
+    margin-top: 6px;
+  }
+  #saveBtn:disabled { opacity: .5; cursor: default; }
+  #resetBtn {
+    width: 100%; padding: 10px; border-radius: 10px; border: 1px solid var(--border);
+    background: var(--panel); color: var(--muted); font-size: 13px; cursor: pointer; margin-top: 8px;
+  }
+  #status { font-size: 13px; color: var(--muted); margin-top: 10px; min-height: 18px; }
+  #status.ok { color: #2f7d4f; }
+  #status.err { color: var(--accent); }
+
+  .note {
+    font-size: 12px; color: var(--muted); background: var(--accent-soft);
+    border-radius: 8px; padding: 10px 12px; line-height: 1.5;
+  }
+</style>
+</head>
+<body>
+
+<div id="left">
+  <div>
+    <h1 id="title">필름 색보정 대시보드</h1>
+    <div class="sub" id="mediaLine">불러오는 중…</div>
+  </div>
+
+  <div id="dropzone">
+    <input type="file" id="fileInput" accept="image/*">
+    <div class="hint">사진을 여기로 끌어다 놓거나 <b>클릭해서 선택</b>하세요</div>
+    <div class="sub">이 페이지에서는 미리보기만 합니다 — 실제 사진 전체 보정은 3_사진보정.bat 그대로 씁니다.</div>
+  </div>
+
+  <div id="compare">
+    <div class="pane">
+      <div class="label">원본</div>
+      <div class="imgbox"><img id="imgOriginal" alt="원본"></div>
+    </div>
+    <div class="pane">
+      <div class="label" id="resultLabel">보정본 (화면용, 일부러 이상하게 보임)</div>
+      <div class="imgbox"><img id="imgResult" alt="결과"></div>
+    </div>
+  </div>
+
+  <div id="modeRow" style="display:none;">
+    <button class="modeBtn active" data-mode="corrected">보정본 (파일 그대로)</button>
+    <button class="modeBtn" data-mode="predicted">인화하면 이렇게 됨</button>
+    <button id="newPhotoBtn">다른 사진</button>
+  </div>
+</div>
+
+<div id="right">
+  <div class="group">
+    <h2>밝기 · 색감 (조정)</h2>
+    <div class="row">
+      <div class="rowhead"><span>밝기</span><span class="val" id="valEv">0%</span></div>
+      <input type="range" id="ev" min="-100" max="100" value="0" step="1">
+    </div>
+    <div class="row">
+      <div class="rowhead"><span>색온도 (차갑게 ↔ 따뜻하게)</span><span class="val" id="valWarm">0</span></div>
+      <input type="range" id="warm" min="-100" max="100" value="0" step="1">
+    </div>
+    <div class="row">
+      <div class="rowhead"><span>틴트 (그린 ↔ 마젠타)</span><span class="val" id="valTint">0</span></div>
+      <input type="range" id="tint" min="-100" max="100" value="0" step="1">
+    </div>
+  </div>
+
+  <div class="group">
+    <h2>대비 (색역압축 강도)</h2>
+    <div class="row">
+      <div class="rowhead"><span>낮을수록 대비↑ / 극단색 뭉개짐 위험↑</span><span class="val" id="valRange">100%</span></div>
+      <input type="range" id="range" min="0" max="100" value="100" step="1">
+    </div>
+  </div>
+
+  <div class="group">
+    <h2>원색 정확도 (색상 간섭 행렬)</h2>
+    <div class="presetRow">
+      <button id="matrixOff" class="active" data-v="0">톤전용 (권장)</button>
+      <button id="matrixOn" data-v="1">전체 모델</button>
+    </div>
+    <div class="note" style="margin-top:10px;">
+      테두리 잘림 대체 경로로 측정한 경우, "전체 모델"은 원색이 과하게
+      튈 수 있습니다. 특별한 이유 없으면 톤전용을 쓰세요.
+    </div>
+  </div>
+
+  <button id="saveBtn" disabled>이 설정을 저장 (3단계에 반영됨)</button>
+  <button id="resetBtn">전부 처음(기준) 상태로</button>
+  <div id="status"></div>
+</div>
+
+<script>
+const el = (id) => document.getElementById(id);
+const state = { ev: 0, warm: 0, tint: 0, rangeStrength: 1, matrixStrength: 0, mode: 'corrected' };
+let debounceTimer = null;
+let hasPhoto = false;
+
+function fmtPct(v) { return (v >= 0 ? '+' : '') + Math.round(v * 100) + '%'; }
+
+function syncLabels() {
+  el('valEv').textContent = fmtPct(state.ev);
+  el('valWarm').textContent = fmtPct(state.warm);
+  el('valTint').textContent = fmtPct(state.tint);
+  el('valRange').textContent = Math.round(state.rangeStrength * 100) + '%';
+}
+
+async function loadStatus() {
+  const r = await fetch('/api/status');
+  const s = await r.json();
+  if (!s.ready) {
+    el('mediaLine').textContent = '측정된 LUT이 없습니다. 2_LUT만들기.bat 을 먼저 실행하세요.';
+    return;
+  }
+  el('mediaLine').textContent = s.mediaLabel + ' 기준 · 지금 저장된 설정을 불러왔습니다';
+  state.ev = s.trim?.ev || 0;
+  state.warm = s.trim?.warm || 0;
+  state.tint = s.trim?.tint || 0;
+  state.rangeStrength = s.rangeStrength ?? 1;
+  state.matrixStrength = s.matrixStrength ?? 0;
+  applyStateToInputs();
+  hasPhoto = s.hasPhoto;
+  if (hasPhoto) {
+    el('imgOriginal').src = '/api/original.png?' + Date.now();
+    showCompare();
+    requestPreview();
+  }
+}
+
+function applyStateToInputs() {
+  el('ev').value = Math.round(state.ev * 100);
+  el('warm').value = Math.round(state.warm * 100);
+  el('tint').value = Math.round(state.tint * 100);
+  el('range').value = Math.round(state.rangeStrength * 100);
+  el('matrixOff').classList.toggle('active', state.matrixStrength === 0);
+  el('matrixOn').classList.toggle('active', state.matrixStrength === 1);
+  syncLabels();
+}
+
+function showCompare() {
+  el('dropzone').style.display = 'none';
+  el('compare').classList.add('show');
+  el('modeRow').style.display = 'flex';
+  el('saveBtn').disabled = false;
+}
+
+async function uploadFile(file) {
+  const buf = await file.arrayBuffer();
+  const r = await fetch('/api/upload', { method: 'POST', body: buf });
+  if (!r.ok) { setStatus('업로드 실패: ' + (await r.json()).error, true); return; }
+  hasPhoto = true;
+  el('imgOriginal').src = URL.createObjectURL(file);
+  showCompare();
+  requestPreview();
+}
+
+function requestPreview() {
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(doPreview, 120);
+}
+
+async function doPreview() {
+  if (!hasPhoto) return;
+  const body = JSON.stringify({
+    ev: state.ev, warm: state.warm, tint: state.tint,
+    rangeStrength: state.rangeStrength, matrixStrength: state.matrixStrength,
+    mode: state.mode,
+  });
+  const r = await fetch('/api/preview', { method: 'POST', body });
+  if (!r.ok) { setStatus('미리보기 실패: ' + (await r.json()).error, true); return; }
+  const blob = await r.blob();
+  el('imgResult').src = URL.createObjectURL(blob);
+  el('resultLabel').textContent = state.mode === 'predicted'
+    ? '인화 예상 (이 파일을 인화하면 이렇게 나올 것)'
+    : '보정본 (화면용, 일부러 이상하게 보임 — 정상입니다)';
+}
+
+function setStatus(msg, isErr) {
+  const s = el('status');
+  s.textContent = msg;
+  s.className = isErr ? 'err' : 'ok';
+}
+
+// ── 이벤트 연결 ──────────────────────────────────────────────────────
+el('dropzone').addEventListener('click', () => el('fileInput').click());
+el('fileInput').addEventListener('change', (e) => { if (e.target.files[0]) uploadFile(e.target.files[0]); });
+['dragover', 'dragenter'].forEach((ev) => el('dropzone').addEventListener(ev, (e) => { e.preventDefault(); el('dropzone').classList.add('drag'); }));
+['dragleave', 'drop'].forEach((ev) => el('dropzone').addEventListener(ev, (e) => { e.preventDefault(); el('dropzone').classList.remove('drag'); }));
+el('dropzone').addEventListener('drop', (e) => { const f = e.dataTransfer.files[0]; if (f) uploadFile(f); });
+
+el('newPhotoBtn').addEventListener('click', () => {
+  el('dropzone').style.display = 'flex';
+  el('compare').classList.remove('show');
+  el('modeRow').style.display = 'none';
+  hasPhoto = false;
+});
+
+document.querySelectorAll('.modeBtn[data-mode]').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.modeBtn[data-mode]').forEach((b) => b.classList.remove('active'));
+    btn.classList.add('active');
+    state.mode = btn.dataset.mode;
+    requestPreview();
+  });
+});
+
+el('ev').addEventListener('input', (e) => { state.ev = +e.target.value / 100; syncLabels(); requestPreview(); });
+el('warm').addEventListener('input', (e) => { state.warm = +e.target.value / 100; syncLabels(); requestPreview(); });
+el('tint').addEventListener('input', (e) => { state.tint = +e.target.value / 100; syncLabels(); requestPreview(); });
+el('range').addEventListener('input', (e) => { state.rangeStrength = +e.target.value / 100; syncLabels(); requestPreview(); });
+
+el('matrixOff').addEventListener('click', () => { state.matrixStrength = 0; applyStateToInputs(); requestPreview(); });
+el('matrixOn').addEventListener('click', () => { state.matrixStrength = 1; applyStateToInputs(); requestPreview(); });
+
+el('saveBtn').addEventListener('click', async () => {
+  el('saveBtn').disabled = true;
+  setStatus('저장 중…');
+  const body = JSON.stringify({
+    ev: state.ev, warm: state.warm, tint: state.tint,
+    rangeStrength: state.rangeStrength, matrixStrength: state.matrixStrength,
+  });
+  const r = await fetch('/api/save', { method: 'POST', body });
+  el('saveBtn').disabled = false;
+  if (!r.ok) { setStatus('저장 실패: ' + (await r.json()).error, true); return; }
+  setStatus('저장했습니다. 이제 3_사진보정.bat 을 돌리면 이 설정으로 나옵니다.');
+});
+
+el('resetBtn').addEventListener('click', () => {
+  state.ev = 0; state.warm = 0; state.tint = 0; state.rangeStrength = 1; state.matrixStrength = 0;
+  applyStateToInputs();
+  requestPreview();
+  setStatus('화면에서만 초기화했습니다 — 저장 버튼을 눌러야 실제로 반영됩니다.');
+});
+
+loadStatus();
+</script>
+</body>
+</html>
